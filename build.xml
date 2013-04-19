@@ -1,0 +1,81 @@
+<project name="hello" default="compile" xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="ivy.home" value="/usr/local/Cellar/ivy/2.3.0/libexec" />
+	<property name="build.dir" value="target" />
+	<property name="src.dir" value="src/main/java" />
+	<property name="resources.dir" value="src/main/resources" />
+	<property name="lib.dir" value="lib" />
+	<property name="test.src.dir" value="src/test/java" />
+	<property name="test.resources.dir" value="src/test/resources" />
+	<property name="reports.dir" value="${build.dir}/reports" />
+
+	<path id="lib.path">
+		<fileset dir="${lib.dir}" />
+	</path>
+	<path id="run.path">
+		<path refid="lib.path" />
+		<path location="${build.dir}" />
+	</path>
+	<path id="ivy.lib.path">
+		<fileset dir="${ivy.home}" includes="*.jar" />
+	</path>
+	<path id="junit.path">
+		<fileset dir="${lib.dir}" includes="*.jar" />
+	</path>
+
+	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+
+	<target name="generate" description="--> generate the project.">
+		<mkdir dir="${src.dir}" />
+		<mkdir dir="${resources.dir}" />
+		<mkdir dir="${test.src.dir}" />
+		<mkdir dir="${test.resources.dir}" />
+	</target>
+
+	<target name="clean" description="--> clean the project.">
+		<delete dir="target" />
+		<delete dir="lib" />
+		<echo>clean complete.</echo>
+	</target>
+
+	<target name="resolve" description="--> retreive dependencies with ivy.">
+		<ivy:retrieve />
+	</target>
+
+	<target name="compile" depends="clean,resolve" description="--> compile the project.">
+		<mkdir dir="${build.dir}" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="lib.path" />
+		<javac srcdir="${test.src.dir}" destdir="${build.dir}" classpathref="lib.path" />
+	</target>
+
+	<target name="test" depends="compile" description="--> test the artifact.">
+		<mkdir dir="${reports.dir}" />
+		<junit printsummary="yes" haltonfailure="no" haltonerror="yes">
+			<classpath refid="junit.path" />
+			<classpath refid="run.path" />
+			<batchtest fork="no" todir="${reports.dir}">
+				<formatter type="xml" />
+				<fileset dir="${test.src.dir}">
+					<include name="**/*Test.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+		<junitreport todir="${reports.dir}">
+			<fileset dir="${reports.dir}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report format="noframes" todir="${reports.dir}" />
+		</junitreport>
+	</target>
+
+	<target name="package" depends="test" description="--> package the artifact.">
+		<jar jarfile="${build.dir}/${ant.project.name}-0.0.1.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="org.yukung.Hello" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="exec" depends="compile" description="--> execute the artifact.">
+		<java classpathref="run.path" classname="org.yukung.Hello" />
+	</target>
+</project>
